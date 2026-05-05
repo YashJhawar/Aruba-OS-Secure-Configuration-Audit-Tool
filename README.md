@@ -1,217 +1,333 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge" alt="Platform" />
-<img src="https://img.shields.io/badge/python-3.8%2B-yellow?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+# 🔒 Aruba OS Secure Configuration Auditor
 
-# 🔒 Aruba OS — Secure Configuration Audit Script
+**Automated CIS benchmark auditing for HPE Aruba AOS-CX switches**
 
-### *Automated security checklist review for AOS-CX devices*
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![CIS Benchmark](https://img.shields.io/badge/CIS-HPE%20Aruba%20CX%20v1.0.1-orange)](https://www.cisecurity.org/)
+[![Checks](https://img.shields.io/badge/Audit%20Checks-61-brightgreen)]()
+[![Contributions Welcome](https://img.shields.io/badge/Contributions-Welcome-blueviolet)]()
 
-**A desktop tool that parses Aruba AOS-CX configuration logs, runs structured security checks, and produces professional-grade Excel audit reports — instantly.**
+<br/>
 
-[What It Does](#-what-it-does) · [Security Checks](#-security-checks) · [How to Use](#-how-to-use) · [Output Format](#-output-format) · [Requirements](#-requirements)
+<br/>
 
----
-
-> ⚠️ **Internal Tool** — For internal security review use only. Not intended for public distribution or external deployment.
-
----
+> Upload one or more Aruba AOS-CX switch configuration files and get a fully formatted Excel report in seconds — no cloud, no account, no dependencies beyond Python.
 
 </div>
 
-## 🚀 What It Does
+---
 
-The **Aruba OS Secure Configuration Auditor** is a Python desktop application that eliminates the manual effort of reviewing Aruba switch configurations. It reads raw configuration log files, runs a structured set of security checks, and produces a clean, colour-coded Excel report — one sheet per device — ready for stakeholder review or compliance documentation.
+## What it does
 
-Built for security reviewers who audit multiple AOS-CX devices at once, it handles batch processing seamlessly: load as many configuration files as needed, run the audit in one click, and get a single consolidated `.xlsx` report.
+This tool reads the plain-text output of `show running-config` from any HPE Aruba AOS-CX switch and evaluates it against **61 security checks** drawn directly from the **CIS HPE Aruba Networking CX Switch Benchmark v1.0.1**.
+
+For every check that fails, the report tells you:
+
+- **What** the CIS finding is and why it matters
+- **What was found** in your config (or that the config is missing entirely)
+- **Exactly what the config should look like** to pass
+
+The output is a colour-coded Excel workbook — one sheet per device — ready to drop into a security review, a change-management ticket, or a compliance report.
 
 ---
 
-## 🧩 Security Checks
+## Checks at a glance
 
-The tool runs **5 automated security checks** derived from Aruba AOS-CX hardening best practices. Each check uses intent-pattern scanning to identify relevant configuration lines, and pass/fail patterns to determine compliance.
+61 checks across 4 sections of the CIS Benchmark:
 
-| # | Check | Severity | What It Validates |
-|---|-------|----------|-------------------|
-| 1 | **Password Complexity** | 🔴 High | All 7 sub-commands present: `minimum-length`, `lowercase-count`, `uppercase-count`, `special-char-count`, `numeric-count`, `history-count`, `enable` |
-| 2 | **Failed Login Attempts** | 🟡 Medium | Both `console-login-attempts` and `limit-login-attempts` configured with lockout times |
-| 3 | **NTP Authentication** | 🟡 Medium | `ntp authentication` enabled and `ntp authentication-key` configured |
-| 4 | **SSH Allow List** | 🟡 Medium | `ssh server allow-list` block present with at least one IP and `enable` |
-| 5 | **Syslog (Remote Logging)** | 🟢 Low | TLS syslog to remote server with `auth-mode subject-name vrf mgmt include-auditable-events` |
+| Section | Topic | Checks |
+|---|---|---|
+| **1 — Management** | Passwords, SSH, NTP, SNMP, AAA, PKI, HTTPS, Syslog, Banner, Backup, Hostname | 30 |
+| **2 — Interface** | USB/Bluetooth, Unused ports, Rate limiting, Proxy ARP, Directed Broadcast | 5 |
+| **3 — Protocol** | OSPF, BGP, DHCP snooping, Multicast, ARP inspection, ND snooping, RA Guard, IPv6 | 23 |
+| **4 — Control Plane** | CoPP, Spanning Tree BPDU/Root Guard, Control Plane ACLs | 3 |
 
-### How Checks Work
+<details>
+<summary>See all 61 checks</summary>
 
-Each check uses a two-stage approach:
+| CIS ID | Check | Severity |
+|---|---|---|
+| 1.1.3 | Hardening Password Rules | 🔴 High |
+| 1.1.4 | Set an Export Password | 🟡 Medium |
+| 1.1.8 | Session Management | 🟡 Medium |
+| 1.1.9 | Verifying Telnet Server is Disabled | 🔴 High |
+| 1.2.1 | SSH Public Key Authentication | 🟡 Medium |
+| 1.2.2 | SSH Allow List | 🟡 Medium |
+| 1.2.3 | SSH Server Port Customization | 🟢 Low |
+| 1.2.5 | Two-factor Authentication with SSH server | 🟡 Medium |
+| 1.3.1 | NTP Authentication | 🟡 Medium |
+| 1.3.2 | Configuring Time Services | 🟢 Low |
+| 1.4.1.1 | Non-Default Community Names, Access Rights & ACL | 🔴 High |
+| 1.4.2.1 | SNMP V3 | 🔴 High |
+| 1.4.3 | SNMP Traps | 🟢 Low |
+| 1.5.1.1 | RADIUS Server Configuration | 🟡 Medium |
+| 1.5.1.2 | TACACS Server Configuration | 🟡 Medium |
+| 1.5.2.2 | Limit Login Attempts | 🟡 Medium |
+| 1.5.2.3 | Remote Authentication — RADIUS/RadSec/TACACS+ | 🟡 Medium |
+| 1.5.3.1 | Local Authorization | 🟢 Low |
+| 1.5.3.2 | Remote Authorization | 🟡 Medium |
+| 1.5.4.1 | Local Accounting | 🟢 Low |
+| 1.5.4.2 | Remote Accounting | 🟡 Medium |
+| 1.5.6 | Login Privilege Elevation for Administrators | 🟡 Medium |
+| 1.6.2 | TLS Minimum Version | 🟡 Medium |
+| 1.9.1 | HTTPS-server Default Enablement | 🟢 Low |
+| 1.9.2 | HTTPS-server Idle Session Management | 🟢 Low |
+| 1.10.1 | ServiceOS Password | 🟡 Medium |
+| 1.11.2 | Configure Syslog-client to Log Using TLS | 🟢 Low |
+| 1.12 | Login Banner | 🟢 Low |
+| 1.13 | Schedule Configuration Backup Job | 🟢 Low |
+| 1.14 | Create Hostname | 🟢 Low |
+| 2.1.1 | Disable USB and Bluetooth on Device | 🟡 Medium |
+| 2.1.3 | Disable Unused Physical Interfaces | 🟡 Medium |
+| 2.2 | Traffic Control — Rate Limiting | 🟢 Low |
+| 2.3 | Proxy ARP | 🟢 Low |
+| 2.4 | IP Directed Broadcast | 🟡 Medium |
+| 3.1.1.1 | OSPF Passive Interfaces | 🟢 Low |
+| 3.1.1.2 | OSPF Neighbor Authentication | 🟡 Medium |
+| 3.1.1.3 | OSPFv3 Area Authentication and Encryption with IPsec | 🟡 Medium |
+| 3.1.2.1 | Control Plane ACL for BGP Peering Sessions | 🟡 Medium |
+| 3.1.2.2 | Authenticate BGP Peers Using MD5 | 🟡 Medium |
+| 3.1.2.3 | BGP TTL Security | 🟢 Low |
+| 3.2.1.1 | DHCPv4 & DHCPv6 Snooping Enablement | 🟡 Medium |
+| 3.2.1.2 | DHCPv6 Guard | 🟢 Low |
+| 3.3.1.1 | PIM Accept-Register | 🟢 Low |
+| 3.3.1.2 | PIM Accept-RP | 🟢 Low |
+| 3.3.1.3 | PIM SSM | 🟢 Low |
+| 3.3.3 | IGMP Snooping ACL | 🟢 Low |
+| 3.3.4 | MLD Snooping ACL | 🟢 Low |
+| 3.3.5 | MSDP Authentication & SA Filtering | 🟡 Medium |
+| 3.3.6 | MSDP SA Cache Limit | 🟢 Low |
+| 3.3.7 | Multicast Boundary ACL | 🟢 Low |
+| 3.3.8 | Multicast BSR Boundary | 🟢 Low |
+| 3.4 | IP Source Lockdown | 🟡 Medium |
+| 3.5 | Dynamic ARP Inspection | 🟡 Medium |
+| 3.6 | ND Snooping | 🟢 Low |
+| 3.7 | RA Guard | 🟢 Low |
+| 3.8 | IPv6 Destination Guard | 🟢 Low |
+| 4.1.1 | Control Plane Policing | 🟡 Medium |
+| 4.2.1 | Spanning Tree BPDU Protect | 🟡 Medium |
+| 4.2.2 | Spanning Tree Root Protect | 🟡 Medium |
+| 4.3.1 | Control Plane ACL Management | 🔴 High |
 
-```
-Stage 1 — Intent Scan
-  Collect every config line related to the command area.
-  These become the "Received Output" evidence in the report.
-
-Stage 2 — Pass/Fail Decision
-  Validate that the structurally complete, correctly configured
-  version of the command is present. If not → finding raised.
-```
-
-This means the tool always shows you *what was found* even when a check fails — not just a red mark — giving auditors real evidence to work with.
+</details>
 
 ---
 
-## 🖥️ How to Use
+## Report output
 
-### 1. Launch the Application
+Every audit produces a `.xlsx` file with one worksheet per scanned device.
+
+| Column | Contents |
+|---|---|
+| **#** | Finding number |
+| **CIS ID** | Benchmark reference (e.g. `1.2.2`, `3.5`) |
+| **Severity** | 🔴 High · 🟡 Medium · 🟢 Low — colour-coded cell |
+| **Observation** | Bold finding title + full observation sentence |
+| **Affected Device** | Device IP (extracted from filename or config) |
+| **Description** | Why this control matters |
+| **Impact** | Security risk if the control is absent |
+| **Recommendation** | Exact remediation commands from the CIS Benchmark |
+| **Received Output** | Config lines found in the file (with line numbers), or *Missing Configuration* |
+| **Expected Output** | What the correctly configured lines should look like |
+
+If a device passes all 61 checks, its sheet shows a single green row.
+
+---
+
+## Requirements
+
+- Python **3.8** or later
+- Works on **Windows**, **macOS**, and **Linux**
+
+```
+pip install openpyxl
+```
+
+> `tkinter` ships with the standard Python installer on all platforms. If you are on a minimal Linux install and it is missing, install it with `sudo apt install python3-tk` (Debian/Ubuntu) or `sudo dnf install python3-tkinter` (Fedora/RHEL).
+
+---
+
+## Getting started
+
+**1. Clone the repository**
 
 ```bash
-python aruba_audit_tool.py
+git clone https://github.com/your-username/aruba-os-auditor.git
+cd aruba-os-auditor
 ```
 
-The GUI launches automatically.
-
-### 2. Add Configuration Files
-
-Click **＋ Add Files** and select one or more Aruba AOS-CX configuration log files (`.log`, `.txt`, `.conf`). Files are listed in the panel — use **✕ Remove Selected** or **⊘ Clear All** to manage the list.
-
-> **Tip:** The tool automatically extracts the device IP from the filename (e.g. `192.168.1.1_config.log`). If no IP is found in the filename, it scans the first 10 lines of the file.
-
-### 3. Set Output Options
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| **Output Folder** | `~/Desktop` | Where the `.xlsx` report is saved |
-| **Report Name** | `AuditReport_MultiDevice` | Filename (`.xlsx` appended automatically) |
-
-### 4. Run the Audit
-
-Click **▶ Run Audit**. The progress bar activates while files are processed in a background thread — the UI stays responsive. When complete, a summary popup shows:
-
-- Number of devices scanned
-- Total findings across all devices
-- Report save path
-
-### 5. Review Findings Preview
-
-The **Findings Preview** table shows results inline before you open the Excel file:
-
-| Column | Description |
-|--------|-------------|
-| `#` | Finding number |
-| `Severity` | High / Medium / Low — colour coded |
-| `Observation` | Brief description of the finding |
-| `Affected Device` | Device IP extracted from the file |
-
----
-
-## 📊 Output Format
-
-The tool generates a single `.xlsx` workbook with **one sheet per device**, named by IP address.
-
-### Sheet Structure
-
-Each sheet contains the following columns:
-
-| Column | Field | Description |
-|--------|-------|-------------|
-| A | `#` | Sequential finding number |
-| B | `Severity` | High / Medium / Low — colour filled |
-| C | `Observation` | Bold title + detail sentence (rich text) |
-| D | `Affected Device` | Device IP |
-| E | `Description` | What the control does and why it matters |
-| F | `Impact` | Business/security risk if not configured |
-| G | `Recommendation` | Exact AOS-CX commands to remediate |
-| H | `Received Output` | Config lines found in the log (evidence) |
-| I | `Expected Output` | What a compliant configuration looks like |
-| J | `FSL Remarks` | Free field for reviewer notes |
-| K | `EY Remarks` | Free field for secondary reviewer notes |
-
-### Severity Colour Coding
-
-```
-🔴  High    →  Red fill    (#FFC7CE)
-🟡  Medium  →  Amber fill  (#FFEB9C)
-🟢  Low     →  Green fill  (#C6EFCE)
-✅  Pass    →  No findings — "All checks PASSED" message on the sheet
-```
-
----
-
-## ⚙️ Requirements
-
-### Python Version
-
-```
-Python 3.8 or higher
-```
-
-### Dependencies
+**2. Install the dependency**
 
 ```bash
 pip install openpyxl
 ```
 
-`tkinter` is included with standard Python on Windows and macOS. On Linux:
+**3. Run the tool**
 
 ```bash
-# Debian / Ubuntu
-sudo apt install python3-tk
-
-# Fedora / RHEL
-sudo dnf install python3-tkinter
+python aruba_os_full_audit_tool.py
 ```
 
-### Supported Input File Types
+**4. Get a config file from your switch**
 
-The tool accepts any plain-text Aruba AOS-CX configuration export:
+On the AOS-CX device:
 
 ```
-*.log    *.txt    *.conf
+switch# show running-config
 ```
+
+Copy/save the terminal output as a `.log`, `.txt`, or `.conf` file. For the clearest report, name the file after the device IP — e.g. `192.168.1.10.log`.
+
+**5. Add files and run the audit**
+
+- Click **Add Files** and select one or more config files
+- Set the output folder (defaults to your Desktop)
+- Give the report a name
+- Click **▶ Run Audit**
+- The `.xlsx` report appears in your chosen folder automatically
 
 ---
 
-## 🗂️ Project Structure
+## How it works
 
 ```
-aruba_audit_tool.py
-│
-├── AUDIT_CHECKS[]            Knowledge base: 5 checks with severity,
-│                             description, impact, recommendation,
-│                             expected output, and check function name
-│
-├── Intent & Pass Patterns    Regex patterns per check:
-│   ├── _PWD_INTENT / _PWD_PASS
-│   ├── _AAA_INTENT / _AAA_PASS_*
-│   ├── _NTP_INTENT / _NTP_PASS_*
-│   ├── _SSH_INTENT / _SSH_PASS_*
-│   └── _SYSLOG_INTENT / _SYSLOG_PASS
-│
-├── Check Functions           One function per check, returns
-│   └── CHECK_DISPATCH{}      (passed: bool, evidence: list)
-│
-├── run_audit()               Reads a log file, runs all checks,
-│                             returns structured findings list
-│
-├── write_multi_excel()       Builds the .xlsx workbook,
-│   └── _write_sheet()        one sheet per device
-│
-└── AuditApp (tkinter)        Desktop GUI: file picker, options,
-                              progress bar, findings preview table
+.log / .txt / .conf file
+        │
+        ▼
+  extract_device_ip()          ← reads IP from filename or first 10 lines
+        │
+        ▼
+  run_audit()
+    ├── check_password_complexity()
+    ├── check_ssh_allowlist()
+    ├── check_ntp_auth()
+    ├── check_snmpv3()
+    ├── ... (61 checks total)
+    │
+    ▼
+  Each check returns (passed: bool, found_lines: list)
+        │
+        ▼
+  _exact_scan()                ← matches only the specific command lines
+        │                         derived from the CIS remediation commands.
+        │                         No broad keyword matching — only exact hits.
+        ▼
+  build Received Output        ← "Missing Configuration" or matched lines
+  build Expected Output        ← exact remediation commands from the benchmark
+        │
+        ▼
+  write_multi_excel()          ← one sheet per device, colour-coded Excel report
 ```
+
+Each check function uses **exact regex patterns** anchored to the start of the line (`^\s*`), derived directly from the CIS remediation commands. This means:
+
+- **No false positives** from comment lines or unrelated commands
+- **Received Output** shows only the config lines directly relevant to the finding
+- **Pass/fail** is determined by whether all required command components are present
 
 ---
 
-## 🔐 Security Notes
+## Project structure
 
-- All processing is **local** — no data leaves the machine
-- Configuration files are opened in **read-only** mode
-- Report filenames are **sanitised** to strip illegal characters
-- The audit runs in a **background thread** to keep the UI non-blocking
-- The tool is strictly for **review purposes** and does not modify any device configuration
+```
+aruba-os-auditor/
+├── aruba_os_full_audit_tool.py   # Main script — everything in one file
+└── README.md
+```
+
+The entire tool is intentionally a single self-contained file. The knowledge base (`AUDIT_CHECKS`), all check functions, the Excel writer, and the GUI all live together — making it easy to read, extend, and share.
+
+---
+
+## Contributing
+
+Contributions of any kind are welcome — new checks, bug fixes, UI improvements, or documentation.
+
+### Adding a new check
+
+Every check follows the same pattern. To add one:
+
+**1. Add an entry to `AUDIT_CHECKS`**
+
+```python
+{
+    "id": 62,
+    "cis_id": "1.x.x",
+    "obs_title": "Your Check Title (Automated)",
+    "observation": "It was observed that <control> is not configured.",
+    "severity": "Medium",          # High | Medium | Low
+    "description": "Why this matters...",
+    "impact": "What can go wrong if absent...",
+    "recommendation": (
+        "It is recommended to configure <control>.\n\n"
+        "switch(config)# <command>"
+    ),
+    "expected_output": (
+        "switch(config)# <command>"
+    ),
+    "check_fn": "check_your_control",
+},
+```
+
+**2. Write the check function**
+
+```python
+def check_your_control(lines):
+    # Define exact patterns matching the remediation command(s)
+    PASS_PATTERNS = [
+        r"^\s*<exact-command>\b",
+    ]
+    # Check if all required patterns are present
+    hits = {p: False for p in PASS_PATTERNS}
+    for line in lines:
+        for p in PASS_PATTERNS:
+            if not hits[p] and re.search(p, line, re.IGNORECASE):
+                hits[p] = True
+    if all(hits.values()):
+        return True, []
+    # Return False + the matching lines for the Received Output
+    return False, _exact_scan(lines, PASS_PATTERNS)
+```
+
+**3. Register the function in `CHECK_DISPATCH`**
+
+```python
+CHECK_DISPATCH = {
+    ...
+    "check_your_control": check_your_control,
+}
+```
+
+That's it — the audit engine, Excel writer, and GUI pick it up automatically.
+
+### Guidelines
+
+- **Pattern accuracy** — Pass patterns should be anchored (`^\s*`) and match only the specific command form from the CIS remediation. Avoid broad keyword patterns that could match unrelated lines.
+- **Source** — Check descriptions, impacts, and recommendations should be grounded in the CIS benchmark or a comparable authoritative source. Please note the source in your PR description.
+- **One PR per check (or small related group)** — Keeps reviews focused.
+- **Test with real config files** — Include a brief note in the PR describing what you tested against (a sanitised snippet is ideal).
+- **No breaking changes to the data structure** — The `AUDIT_CHECKS` dict keys and `CHECK_DISPATCH` interface are stable. New keys can be added but existing ones should not be renamed.
+
+### Reporting issues
+
+Found a check that produces a false positive, misses a valid finding, or has incorrect remediation commands? Please open an issue with:
+
+- The CIS ID and check name
+- A short sanitised snippet of the config that triggers the problem
+- What the tool reported vs. what you expected
+
+---
+
+## Acknowledgements
+
+- **[Center for Internet Security (CIS)](https://www.cisecurity.org/)** — CIS HPE Aruba Networking CX Switch Benchmark v1.0.1, which defines all 61 controls implemented here.
+- **[HPE Aruba Networking](https://www.arubanetworks.com/)** — AOS-CX platform and documentation.
+- **[openpyxl](https://openpyxl.readthedocs.io/)** — Excel report generation.
 
 ---
 
 <div align="center">
-
-*Built for internal security review of Aruba AOS-CX infrastructure.*
-*Part of the Audit Shield security tooling suite.*
-
+<sub>Built for the network security community · Contributions welcome · Not affiliated with HPE or CIS</sub>
 </div>
